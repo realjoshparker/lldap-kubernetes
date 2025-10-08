@@ -1,0 +1,23 @@
+{{- range $name, $cm := .Values.configMaps }}
+{{- if $cm.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ if $cm.forceRename }}{{ $cm.forceRename }}{{- else }}{{ include "lldap.fullname" $ }}-{{ $name }}{{- end }}
+  namespace: {{ $.Release.Namespace }}
+  {{- if $cm.annotations }}
+  annotations:
+    {{- toYaml $cm.annotations | nindent 4 }}
+  {{- end }}
+  {{- if $cm.labels }}
+  labels:
+    {{- toYaml $cm.labels | nindent 4 }}
+  {{- end }}
+data:
+  {{- range $key, $value := $cm.data }}
+  {{ $key }}: |-
+{{ $value | indent 4 }}
+  {{- end }}
+---
+{{- end }}
+{{- end }}

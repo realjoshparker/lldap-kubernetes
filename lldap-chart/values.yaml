@@ -74,6 +74,38 @@ hpa:
   targetCPUUtilizationPercentage: 60
   targetMemoryUtilizationPercentage: 60
 
+##### Probes configuration
+probes:
+  readiness:
+    enabled: true
+    httpGet:
+      path: /
+      port: 17170
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+    successThreshold: 1
+
+  liveness:
+    enabled: true
+    httpGet:
+      path: /
+      port: 17170
+    initialDelaySeconds: 30
+    periodSeconds: 20
+    timeoutSeconds: 2
+    failureThreshold: 5
+    successThreshold: 1
+
+  startup:
+    enabled: true
+    httpGet:
+      path: /
+      port: 17170
+    failureThreshold: 30
+    periodSeconds: 10
+
 ##### Service definition
 service:
   type: ClusterIP
@@ -100,3 +132,32 @@ ingress:
     - secretName: "lldap-secret-tls"
       hosts:
         - "lldap.test.com"
+
+configMaps:
+  nfs-probe:
+    enabled: true
+    forceRename: nfs-probe
+    data:
+      nfs-probe: |
+        #!/usr/bin/env sh
+        set -eu
+  
+        # Collect NFS and NFSv4 mountpoints
+        mounts="$(awk '$3 ~ /^nfs/ {print $2}' /proc/mounts || true)"
+  
+        # No NFS mounts? Consider healthy.
+        [ -z "$mounts" ] && exit 0
+  
+        for mp in $mounts; do
+          # Fast directory access with a timeout so we never hang the probe
+          if ! timeout 3 sh -c "ls -ld \"$mp\" >/dev/null 2>/tmp/nfs.err"; then
+            # Look for classic NFS failure strings; treat any failure as NotReady
+            if grep -qiE 'stale file handle|input/output error|not connected|permission denied|nfs' /tmp/nfs.err; then
+              echo "NFS unhealthy on $mp: $(cat /tmp/nfs.err)" >&2
+              exit 1
+            fi
+            exit 1
+          fi
+        done
+  
+        exit 0

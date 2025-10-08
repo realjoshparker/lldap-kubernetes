@@ -79,6 +79,17 @@ spec:
             - containerPort: 3890
             - containerPort: 6360
             - containerPort: 17170
+          {{- if .Values.probes.readiness.enabled }}
+          readinessProbe: {{- toYaml .Values.probes.readiness | nindent 12 }}
+          {{- end }}
+
+          {{- if .Values.probes.liveness.enabled }}
+          livenessProbe: {{- toYaml .Values.probes.liveness | nindent 12 }}
+          {{- end }}
+
+          {{- if .Values.probes.startup.enabled }}
+          startupProbe: {{- toYaml .Values.probes.startup | nindent 12 }}
+          {{- end }}
           volumeMounts:
             {{- if .Values.persistence.enabled }}
             - mountPath: /data
