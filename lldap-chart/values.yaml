@@ -134,30 +134,8 @@ ingress:
         - "lldap.test.com"
 
 configMaps:
-  nfs-probe:
-    enabled: true
-    forceRename: nfs-probe
+  key-value:
+    enabled: false
+    forceRename: my-custom-name
     data:
-      nfs-probe: |
-        #!/usr/bin/env sh
-        set -eu
-  
-        # Collect NFS and NFSv4 mountpoints
-        mounts="$(awk '$3 ~ /^nfs/ {print $2}' /proc/mounts || true)"
-  
-        # No NFS mounts? Consider healthy.
-        [ -z "$mounts" ] && exit 0
-  
-        for mp in $mounts; do
-          # Fast directory access with a timeout so we never hang the probe
-          if ! timeout 3 sh -c "ls -ld \"$mp\" >/dev/null 2>/tmp/nfs.err"; then
-            # Look for classic NFS failure strings; treat any failure as NotReady
-            if grep -qiE 'stale file handle|input/output error|not connected|permission denied|nfs' /tmp/nfs.err; then
-              echo "NFS unhealthy on $mp: $(cat /tmp/nfs.err)" >&2
-              exit 1
-            fi
-            exit 1
-          fi
-        done
-  
-        exit 0
+      key: value
