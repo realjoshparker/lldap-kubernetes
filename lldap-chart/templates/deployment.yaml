@@ -79,17 +79,9 @@ spec:
             - containerPort: 3890
             - containerPort: 6360
             - containerPort: 17170
-          {{- if .Values.probes.readiness.enabled }}
-          readinessProbe: {{- toYaml .Values.probes.readiness | nindent 12 }}
-          {{- end }}
-
-          {{- if .Values.probes.liveness.enabled }}
-          livenessProbe: {{- toYaml .Values.probes.liveness | nindent 12 }}
-          {{- end }}
-
-          {{- if .Values.probes.startup.enabled }}
-          startupProbe: {{- toYaml .Values.probes.startup | nindent 12 }}
-          {{- end }}
+          {{- include "common.probe" (dict "name" "readinessProbe" "probe" .Values.probes.readiness) | indent 10 }}
+          {{- include "common.probe" (dict "name" "livenessProbe" "probe" .Values.probes.liveness) | indent 10 }}
+          {{- include "common.probe" (dict "name" "startupProbe" "probe" .Values.probes.startup) | indent 10 }}
           volumeMounts:
             {{- if .Values.persistence.enabled }}
             - mountPath: /data
